@@ -1,10 +1,15 @@
 package gorouter
 
-import "net/http"
+import (
+	"net/http"
+	"regexp"
+	"strings"
+)
 
 type Node struct {
 	idx      int
 	slug     string
+	rgxp     *regexp.Regexp
 	nodes    []*Node
 	handlers map[string]http.HandlerFunc
 }
@@ -19,9 +24,22 @@ func newRootNode() *Node {
 }
 
 func newNode(slugs []string, idx int) *Node {
+	slug := slugs[idx-1]
+	if slug[:1] == ":" {
+		if i := strings.Index(slug, "("); i != -1 {
+			regex := slug[i+1 : len(slug)-1]
+			return &Node{
+				idx:      idx,
+				slug:     slug,
+				rgxp:     regexp.MustCompile("^" + regex + "$"),
+				nodes:    []*Node{},
+				handlers: make(map[string]http.HandlerFunc),
+			}
+		}
+	}
 	return &Node{
 		idx:      idx,
-		slug:     slugs[idx-1],
+		slug:     slug,
 		nodes:    []*Node{},
 		handlers: make(map[string]http.HandlerFunc),
 	}
@@ -34,6 +52,10 @@ func (n *Node) setHandler(method string, handler http.HandlerFunc) {
 func (n *Node) match(slugs []string) bool {
 	if n.idx == 0 {
 		return true
+	}
+	slug := slugs[n.idx-1]
+	if n.slug[:1] == ":" {
+		return n.rgxp == nil || n.rgxp.MatchString(slug)
 	}
 	return slugs[n.idx-1] == n.slug
 }
