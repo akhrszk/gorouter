@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"github.com/akhrszk/gorouter"
@@ -17,7 +18,8 @@ const port = 3000
 func main() {
 	r := gorouter.NewRouter()
 	r.Get("/", Index)
-	r.Get("/say", Say)
+	r.Get("/sum/:num1(\\d)/:num2(\\d)", Sum)
+	r.Get("/:name(\\w+)/hello", Hello)
 
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
@@ -44,12 +46,20 @@ func main() {
 	}
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func Index(w http.ResponseWriter, r *http.Request, _ gorouter.Params) {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "Welcome!!")
 }
 
-func Say(w http.ResponseWriter, r *http.Request) {
+func Sum(w http.ResponseWriter, r *http.Request, params gorouter.Params) {
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "にゃーん")
+	num1, _ := strconv.Atoi(params["num1"])
+	num2, _ := strconv.Atoi(params["num2"])
+	s := fmt.Sprintf("%d+%d=%d", num1, num2, num1+num2)
+	fmt.Fprintf(w, s)
+}
+
+func Hello(w http.ResponseWriter, r *http.Request, params gorouter.Params) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, params["name"]+", Hello!!")
 }

@@ -1,7 +1,6 @@
 package gorouter
 
 import (
-	"net/http"
 	"regexp"
 	"strings"
 )
@@ -11,7 +10,7 @@ type Node struct {
 	slug     string
 	rgxp     *regexp.Regexp
 	nodes    []*Node
-	handlers map[string]http.HandlerFunc
+	handlers map[string]Handler
 }
 
 func newRootNode() *Node {
@@ -19,7 +18,7 @@ func newRootNode() *Node {
 		idx:      0,
 		slug:     "/",
 		nodes:    []*Node{},
-		handlers: make(map[string]http.HandlerFunc),
+		handlers: make(map[string]Handler), // { [http.Method]: Handler }
 	}
 }
 
@@ -30,10 +29,10 @@ func newNode(slugs []string, idx int) *Node {
 			regex := slug[i+1 : len(slug)-1]
 			return &Node{
 				idx:      idx,
-				slug:     slug,
+				slug:     slug[:i],
 				rgxp:     regexp.MustCompile("^" + regex + "$"),
 				nodes:    []*Node{},
-				handlers: make(map[string]http.HandlerFunc),
+				handlers: make(map[string]Handler),
 			}
 		}
 	}
@@ -41,46 +40,55 @@ func newNode(slugs []string, idx int) *Node {
 		idx:      idx,
 		slug:     slug,
 		nodes:    []*Node{},
-		handlers: make(map[string]http.HandlerFunc),
+		handlers: make(map[string]Handler),
 	}
 }
 
-func (n *Node) setHandler(method string, handler http.HandlerFunc) {
+func (n *Node) setHandler(method string, handler Handler) {
 	n.handlers[method] = handler
 }
 
-func (n *Node) match(slugs []string) bool {
+// Returns matching result and path paramter in [key, value]
+func (n *Node) match(slugs []string) (bool, []string) {
 	if n.idx == 0 {
-		return true
+		return true, nil
 	}
 	slug := slugs[n.idx-1]
 	if n.slug[:1] == ":" {
-		return n.rgxp == nil || n.rgxp.MatchString(slug)
+		b := n.rgxp == nil || n.rgxp.MatchString(slug)
+		if !b {
+			return false, nil
+		}
+		return true, []string{n.slug[1:], slug}
 	}
-	return slugs[n.idx-1] == n.slug
+	return slugs[n.idx-1] == n.slug, nil
 }
 
-func (n *Node) find(slugs []string) *Node {
-	if n.match(slugs) {
+func (n *Node) find(slugs []string, params Params) (*Node, Params) {
+	if b, param := n.match(slugs); b {
+		if len(param) > 0 {
+			params[param[0]] = param[1]
+		}
 		if n.idx == len(slugs) {
-			return n
+			return n, params
 		}
 		for _, cn := range n.nodes {
-			if found := cn.find(slugs); found != nil {
-				return found
+			if node, params := cn.find(slugs, params); node != nil {
+				return node, params
 			}
 		}
 	}
-	return nil
+	return nil, nil
 }
 
-func (n *Node) add(slugs []string, method string, handler http.HandlerFunc) bool {
+// Add child Node
+func (n *Node) add(slugs []string, method string, handler Handler) bool {
 	if len(slugs) == n.idx {
 		n.setHandler(method, handler)
 		return true
 	}
 	for _, cn := range n.nodes {
-		if cn.match(slugs) {
+		if cn.slug == slugs[n.idx] {
 			return cn.add(slugs, method, handler)
 		}
 	}
