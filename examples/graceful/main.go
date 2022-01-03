@@ -16,10 +16,10 @@ import (
 const port = 3000
 
 func main() {
-	r := gorouter.NewRouter()
+	r := gorouter.New()
 	r.Get("/", Index)
-	r.Get("/sum/:num1(\\d)/:num2(\\d)", Sum)
 	r.Get("/:name(\\w+)/hello", Hello)
+	r.Get("/sum/:num1(\\d)/:num2(\\d)", Sum)
 
 	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
