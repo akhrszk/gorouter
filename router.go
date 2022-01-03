@@ -13,7 +13,7 @@ type Params map[string]string
 
 type Handler func(http.ResponseWriter, *http.Request, Params)
 
-func NewRouter() *Router {
+func New() *Router {
 	return &Router{
 		route: newRootNode(),
 	}

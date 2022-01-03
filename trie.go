@@ -49,19 +49,19 @@ func (n *Node) setHandler(method string, handler Handler) {
 }
 
 // Returns matching result and path paramter in [key, value]
-func (n *Node) match(slugs []string) (bool, []string) {
+func (n *Node) match(slugs []string) (bool, [2]string) {
 	if n.idx == 0 {
-		return true, nil
+		return true, [2]string{}
 	}
 	slug := slugs[n.idx-1]
 	if n.slug[:1] == ":" {
 		b := n.rgxp == nil || n.rgxp.MatchString(slug)
 		if !b {
-			return false, nil
+			return false, [2]string{}
 		}
-		return true, []string{n.slug[1:], slug}
+		return true, [2]string{n.slug[1:], slug}
 	}
-	return slugs[n.idx-1] == n.slug, nil
+	return slugs[n.idx-1] == n.slug, [2]string{}
 }
 
 func (n *Node) find(slugs []string, params Params) (*Node, Params) {
