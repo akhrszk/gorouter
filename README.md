@@ -78,4 +78,4 @@ Pattern: /users/:id(\\d+)
 - **Akihiro Suzuki**
   - GitHub: [akhrszk](https://github.com/akhrszk)
   - Twitter: [@akhr_s](https://twitter.com/akhr_s)
-  - Blog: [akihr.io](https://akihr.io/)
+  - Blog: [akihiro.dev](https://akihiro.dev/)
